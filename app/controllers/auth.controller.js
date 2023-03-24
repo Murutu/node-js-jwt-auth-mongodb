@@ -3,8 +3,8 @@ const db = require("../models");
 const User = db.user;
 const Role = db.role;
 
-let jwt = require("jsonwebtoken");
-let bcrypt = require("bcryptjs");
+var jwt = require("jsonwebtoken");
+var bcrypt = require("bcryptjs");
 
 exports.signup = (req, res) => {
     const user = new User({
@@ -40,13 +40,21 @@ exports.signup = (req, res) => {
                         res.send({ message: "User was registered successfully!"})
                     })
                 }
-            );;
+            );
         } else {
             Role.findOne({ name: "user" } , (err, role) => {
                 if(err) {
                     res.status(500).send({ message: err });
                     return;
                 }
+
+                user.roles = [role._id];
+                user.save(err => {
+                    if(err) {
+                        res.status(500).send({ message: err });
+                        return;
+                    }
+                })
 
                 res.send({ message: "User was registered successfully!"})
             })
@@ -61,14 +69,15 @@ exports.signin = (req, res) => {
         .populate("roles", "-__v")
         .exec((err, user) => {
             if(err) {
-                res.status(500).send({ message: err})
+                res.status(500).send({ message: err});
+                return;
             }
 
             if(!user) {
                 return res.status(404).send({ message: "User Not found."})
             }
 
-            let passwordIsValid = bcrypt.compareSync(
+            var passwordIsValid = bcrypt.compareSync(
                 req.body.password,
                 user.password
             )
